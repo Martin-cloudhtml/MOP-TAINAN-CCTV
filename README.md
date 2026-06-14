@@ -2,7 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>監控牆 v6.2（跨裝置版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>監控牆 v6.3（iOS Swipe版）</title>
 
 <style>
 
@@ -12,11 +14,19 @@ html, body{
     width:100%;
     height:100%;
     overflow:hidden;
+
+    /* 🔥 iOS 關鍵 */
+    position:fixed;
+    inset:0;
+
+    overscroll-behavior:none;
     background:#0b0f14;
-    font-family:Arial;
+    touch-action:none;
+    -webkit-user-select:none;
+    user-select:none;
 }
 
-/* ===== GRID（桌面） ===== */
+/* ===== DESKTOP GRID ===== */
 .grid{
     display:grid;
     width:100vw;
@@ -33,20 +43,20 @@ html, body{
     overflow:hidden;
     background:#000;
     cursor:pointer;
-    min-height:0;
-
-    border:2px solid #1f2a33;
 }
 
+/* iframe（讓它不要吃手勢） */
 iframe{
     position:absolute;
     inset:0;
     width:100%;
     height:100%;
     border:0;
+
+    pointer-events:auto;
 }
 
-/* 標題 */
+/* title */
 .title{
     position:absolute;
     top:6px;
@@ -61,7 +71,7 @@ iframe{
     font-size:12px;
 }
 
-/* ===== FOCUS（桌面） ===== */
+/* ===== DESKTOP FOCUS ===== */
 .focusOverlay{
     position:fixed;
     inset:0;
@@ -81,54 +91,35 @@ iframe{
 .focusCam{
     width:100vw;
     height:100vh;
-    animation:zoomIn 0.2s ease;
 }
 
-@keyframes zoomIn{
-    from{transform:scale(0.85); opacity:0;}
-    to{transform:scale(1); opacity:1;}
-}
-
-/* ===== MOBILE MODE ===== */
-@media (max-width: 768px){
-
-    html, body{
-        overflow:auto;
-    }
-
-    .grid{
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-        height:auto;
-    }
-
-    .camera{
-        aspect-ratio:16/9;
-    }
-
-}
-
-/* ===== SWIPE VIEW（手機單畫面） ===== */
+/* ===== MOBILE SWIPE VIEW ===== */
 .swipeView{
     display:none;
     width:100vw;
     height:100vh;
-    overflow:hidden;
     position:relative;
+    overflow:hidden;
 }
 
+/* 單一畫面 */
 .swipeCam{
     width:100%;
     height:100%;
     position:absolute;
-    top:0;
-    left:0;
+    inset:0;
 }
 
-/* 手機才啟用 swipe */
+/* ===== RWD ===== */
 @media (max-width:768px){
-    .swipeView{ display:block; }
-    .grid{ display:none; }
+
+    .grid{
+        display:none;
+    }
+
+    .swipeView{
+        display:block;
+    }
 }
 
 </style>
@@ -136,7 +127,7 @@ iframe{
 
 <body>
 
-<!-- ===== 桌面監控牆 ===== -->
+<!-- ===== DESKTOP GRID ===== -->
 <div class="grid" id="grid">
 
     <div class="camera" onclick="focusCam(this)">
@@ -171,16 +162,17 @@ iframe{
 
 </div>
 
-<!-- ===== mobile swipe view ===== -->
+<!-- ===== MOBILE SWIPE ===== -->
 <div class="swipeView" id="swipeView"></div>
 
-<!-- focus -->
-<div class="focusOverlay" id="overlay" onclick="overlayClick(event)"></div>
+<!-- ===== DESKTOP FOCUS ===== -->
+<div class="focusOverlay" id="overlay" onclick="closeFocus()"></div>
 
 <script>
 
 let cams = document.querySelectorAll(".camera");
 let overlay = document.getElementById("overlay");
+
 let currentIndex = null;
 
 /* ===== DESKTOP FOCUS ===== */
@@ -197,10 +189,12 @@ function focusCam(el){
 
     const clone = el.cloneNode(true);
     clone.classList.add("focusCam");
+
     clone.onclick = closeFocus;
 
     overlay.innerHTML = "";
     overlay.appendChild(clone);
+
     overlay.classList.add("active");
 }
 
@@ -211,14 +205,7 @@ function closeFocus(){
     currentIndex = null;
 }
 
-/* ===== overlay click ===== */
-function overlayClick(e){
-    if(e.target.id === "overlay"){
-        closeFocus();
-    }
-}
-
-/* ===== KEYBOARD (desktop) ===== */
+/* ===== KEYBOARD ===== */
 document.addEventListener("keydown", (e)=>{
 
     const key = parseInt(e.key);
@@ -233,14 +220,16 @@ document.addEventListener("keydown", (e)=>{
     }
 });
 
-/* ===== MOBILE SWIPE MODE ===== */
+/* ===== MOBILE SWIPE ENGINE ===== */
 let swipeIndex = 0;
+let startX = 0;
 
 function initSwipe(){
 
     const swipe = document.getElementById("swipeView");
 
     cams.forEach((cam, i)=>{
+
         const clone = cam.cloneNode(true);
         clone.classList.add("swipeCam");
 
@@ -249,39 +238,39 @@ function initSwipe(){
         swipe.appendChild(clone);
     });
 
-    swipe.addEventListener("touchstart", handleTouch);
-}
+    document.addEventListener("touchstart", (e)=>{
+        startX = e.touches[0].clientX;
+    }, {passive:true});
 
-let startX = 0;
+    document.addEventListener("touchend", (e)=>{
 
-function handleTouch(e){
-    startX = e.touches[0].clientX;
-}
+        const endX = e.changedTouches[0].clientX;
+        const diff = endX - startX;
 
-document.addEventListener("touchend", (e)=>{
+        if(Math.abs(diff) > 50){
 
-    const endX = e.changedTouches[0].clientX;
+            const swipe = document.getElementById("swipeView");
+            const items = swipe.querySelectorAll(".swipeCam");
 
-    if(Math.abs(endX - startX) > 50){
+            items[swipeIndex].style.display = "none";
 
-        const swipe = document.getElementById("swipeView");
+            if(diff < 0){
+                swipeIndex = (swipeIndex + 1) % items.length;
+            }else{
+                swipeIndex = (swipeIndex - 1 + items.length) % items.length;
+            }
 
-        const items = swipe.querySelectorAll(".swipeCam");
-
-        items[swipeIndex].style.display = "none";
-
-        if(endX < startX){
-            swipeIndex = (swipeIndex + 1) % items.length;
-        }else{
-            swipeIndex = (swipeIndex - 1 + items.length) % items.length;
+            items[swipeIndex].style.display = "block";
         }
 
-        items[swipeIndex].style.display = "block";
-    }
+    }, {passive:true});
+}
 
-});
+/* ===== iOS 防彈滑動（重要） ===== */
+document.addEventListener('touchmove', function(e){
+    e.preventDefault();
+}, { passive:false });
 
-/* init mobile */
 initSwipe();
 
 </script>
