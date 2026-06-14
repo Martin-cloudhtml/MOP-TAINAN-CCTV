@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MOP台南週邊道路監控 NVR Ver1.0</title>
+<title>道路監控 NVR</title>
 
 <style>
 html, body {
@@ -13,7 +13,7 @@ html, body {
   font-family: system-ui;
 }
 
-/* 監控牆 */
+/* 🖥️ 電腦監控牆 */
 .grid {
   height:100vh;
   display:grid;
@@ -27,7 +27,6 @@ html, body {
   cursor:pointer;
 }
 
-/* 影像填滿 */
 iframe {
   position:absolute;
   inset:0;
@@ -36,7 +35,7 @@ iframe {
   border:none;
 }
 
-/* CAM 標籤（純靜態） */
+/* CAM 標籤 */
 .label {
   position:absolute;
   top:8px;
@@ -51,7 +50,7 @@ iframe {
   backdrop-filter: blur(4px);
 }
 
-/* 主畫面 */
+/* 🔴 主畫面 */
 #mainView {
   position:fixed;
   inset:0;
@@ -92,10 +91,22 @@ iframe {
   font-size:12px;
 }
 
-/* 手機 */
+/* 📱 手機修正（只修變扁問題） */
 @media (max-width:768px){
+
   .grid {
+    height:auto;
     grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap:8px;
+    padding:8px;
+  }
+
+  .tile {
+    position:relative;
+    width:100%;
+    aspect-ratio:16 / 9;
+    overflow:hidden;
   }
 }
 </style>
@@ -117,12 +128,12 @@ iframe {
 <script>
 
 const cams = [
-  { name:"CAM-01 往北平面", url:"https://trafficvideo.tainan.gov.tw/1914bcd5" },
-  { name:"CAM-02 往南側車塔", url:"https://trafficvideo.tainan.gov.tw/3e6342c7" },
-  { name:"CAM-03 歸仁大道近MOP側", url:"https://trafficvideo2.tainan.gov.tw/26f189b2" },
-  { name:"CAM-04 86匯出下高鐵側車道", url:"https://trafficvideo2.tainan.gov.tw/6d3a22cf" },
-  { name:"CAM-05 86匯出下大潭武東", url:"https://trafficvideo2.tainan.gov.tw/b15b446c" },
-  { name:"CAM-06 歸仁大道近高鐵側", url:"https://trafficvideo.tainan.gov.tw/48e70b5d" }
+  { name:"CAM-01", url:"https://trafficvideo.tainan.gov.tw/1914bcd5" },
+  { name:"CAM-02", url:"https://trafficvideo.tainan.gov.tw/3e6342c7" },
+  { name:"CAM-03", url:"https://trafficvideo2.tainan.gov.tw/26f189b2" },
+  { name:"CAM-04", url:"https://trafficvideo2.tainan.gov.tw/6d3a22cf" },
+  { name:"CAM-05", url:"https://trafficvideo2.tainan.gov.tw/b15b446c" },
+  { name:"CAM-06", url:"https://trafficvideo.tainan.gov.tw/48e70b5d" }
 ];
 
 let currentIndex = -1;
@@ -166,18 +177,24 @@ function closeMain(){
   document.getElementById("topLeft").style.display = "none";
 }
 
-/* 鍵盤控制 */
-document.addEventListener("keydown",(e)=>{
+/* 🧠 只在桌機啟用鍵盤 */
+const isTouchDevice =
+  ("ontouchstart" in window) ||
+  navigator.maxTouchPoints > 0;
 
-  if(e.key === "Escape"){
-    closeMain();
-  }
+if (!isTouchDevice) {
+  window.addEventListener("keydown", (e) => {
 
-  const num = parseInt(e.key);
-  if(num >= 1 && num <= cams.length){
-    openMain(num-1);
-  }
-});
+    if (e.key === "Escape") {
+      closeMain();
+    }
+
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= cams.length) {
+      openMain(num - 1);
+    }
+  });
+}
 
 </script>
 
