@@ -50,6 +50,22 @@ iframe {
   backdrop-filter: blur(4px);
 }
 
+/* 🕒 小畫面時間 */
+.time {
+  position:absolute;
+  bottom:8px;
+  right:8px;
+  z-index:2;
+
+  background:rgba(0,0,0,.6);
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:12px;
+  color:#fff;
+  font-family: monospace;
+  backdrop-filter: blur(4px);
+}
+
 /* 🔴 主畫面 */
 #mainView {
   position:fixed;
@@ -59,10 +75,27 @@ iframe {
   display:none;
 }
 
+/* 主畫面 iframe */
 #mainFrame {
   width:100%;
   height:100%;
   border:none;
+}
+
+/* 🔴 主畫面時間 */
+.mainTime {
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  z-index:1001;
+
+  background:rgba(0,0,0,.65);
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:14px;
+  color:#fff;
+  font-family: monospace;
+  backdrop-filter: blur(4px);
 }
 
 /* 左上控制 */
@@ -93,7 +126,6 @@ iframe {
 
 /* 📱 手機修正（只修變扁問題） */
 @media (max-width:768px){
-
   .grid {
     height:auto;
     grid-template-columns: 1fr;
@@ -103,10 +135,8 @@ iframe {
   }
 
   .tile {
-    position:relative;
     width:100%;
     aspect-ratio:16 / 9;
-    overflow:hidden;
   }
 }
 </style>
@@ -117,6 +147,7 @@ iframe {
 <div class="grid" id="grid"></div>
 
 <div id="mainView">
+  <div class="time mainTime" id="mainTime">--:--:--</div>
   <iframe id="mainFrame"></iframe>
 </div>
 
@@ -136,9 +167,8 @@ const cams = [
   { name:"CAM-06 歸仁大道近高鐵站側", url:"https://trafficvideo.tainan.gov.tw/48e70b5d" }
 ];
 
-let currentIndex = -1;
-
 const grid = document.getElementById("grid");
+let currentIndex = -1;
 
 /* 建立監控牆 */
 cams.forEach((c,i)=>{
@@ -148,6 +178,7 @@ cams.forEach((c,i)=>{
 
   tile.innerHTML = `
     <div class="label">${c.name}</div>
+    <div class="time" id="time${i}">--:--:--</div>
     <iframe src="${c.url}"></iframe>
   `;
 
@@ -155,6 +186,38 @@ cams.forEach((c,i)=>{
 
   grid.appendChild(tile);
 });
+
+/* 🕒 GMT+8 時間更新 */
+function updateTime(){
+
+  const now = new Date();
+
+  const options = {
+    timeZone: "Asia/Taipei",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  };
+
+  const timeStr = new Intl.DateTimeFormat("zh-TW", options).format(now);
+
+  // 🟢 小畫面
+  cams.forEach((_,i)=>{
+    const el = document.getElementById("time"+i);
+    if(el) el.innerText = timeStr;
+  });
+
+  // 🔴 主畫面
+  const mainTime = document.getElementById("mainTime");
+  if(mainTime) mainTime.innerText = timeStr;
+}
+
+setInterval(updateTime, 1000);
+updateTime();
 
 /* 主畫面 */
 function openMain(i){
@@ -185,9 +248,7 @@ const isTouchDevice =
 if (!isTouchDevice) {
   window.addEventListener("keydown", (e) => {
 
-    if (e.key === "Escape") {
-      closeMain();
-    }
+    if (e.key === "Escape") closeMain();
 
     const num = parseInt(e.key);
     if (num >= 1 && num <= cams.length) {
