@@ -4,24 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>監控牆 v6.4.2（Safari穩定版）</title>
+<title>監控牆 v6.5（壅塞標記版）</title>
 
 <style>
 
-/* ===== 最穩基底（iOS安全寫法） ===== */
 html, body{
     margin:0;
     padding:0;
+    width:100%;
+    height:100%;
     background:#0b0f14;
 }
 
-/* ❗ 不用 fixed，不用 flex 在 body */
+/* ===== wrapper ===== */
 .wrapper{
     width:100vw;
     height:100vh;
 }
 
-/* ===== GRID（簡化） ===== */
+/* ===== GRID ===== */
 .grid{
     display:grid;
     width:100%;
@@ -38,9 +39,17 @@ html, body{
     position:relative;
     overflow:hidden;
     background:#000;
+    cursor:pointer;
+
+    border:3px solid #1f2a33;
+    transition:0.3s;
 }
 
-/* iframe */
+/* 壅塞顏色 */
+.camera.ok{ border-color:#00ff7f; }
+.camera.warn{ border-color:#ffcc00; }
+.camera.err{ border-color:#ff3b30; }
+
 iframe{
     position:absolute;
     inset:0;
@@ -63,7 +72,7 @@ iframe{
     font-size:12px;
 }
 
-/* ===== focus ===== */
+/* ===== FOCUS ===== */
 .focusOverlay{
     position:fixed;
     inset:0;
@@ -91,32 +100,32 @@ iframe{
 
     <div class="grid">
 
-        <div class="camera" onclick="focusCam(this)">
+        <div class="camera ok" onclick="focusCam(this)">
             <div class="title">CAM-01</div>
             <iframe src="https://trafficvideo.tainan.gov.tw/1914bcd5"></iframe>
         </div>
 
-        <div class="camera" onclick="focusCam(this)">
+        <div class="camera warn" onclick="focusCam(this)">
             <div class="title">CAM-02</div>
             <iframe src="https://trafficvideo.tainan.gov.tw/3e6342c7"></iframe>
         </div>
 
-        <div class="camera" onclick="focusCam(this)">
+        <div class="camera ok" onclick="focusCam(this)">
             <div class="title">CAM-03</div>
             <iframe src="https://trafficvideo2.tainan.gov.tw/26f189b2"></iframe>
         </div>
 
-        <div class="camera" onclick="focusCam(this)">
+        <div class="camera err" onclick="focusCam(this)">
             <div class="title">CAM-04</div>
             <iframe src="https://trafficvideo2.tainan.gov.tw/6d3a22cf"></iframe>
         </div>
 
-        <div class="camera" onclick="focusCam(this)">
+        <div class="camera ok" onclick="focusCam(this)">
             <div class="title">CAM-05</div>
             <iframe src="https://trafficvideo2.tainan.gov.tw/b15b446c"></iframe>
         </div>
 
-        <div class="camera" onclick="focusCam(this)">
+        <div class="camera warn" onclick="focusCam(this)">
             <div class="title">CAM-06</div>
             <iframe src="https://trafficvideo.tainan.gov.tw/48e70b5d"></iframe>
         </div>
@@ -125,19 +134,14 @@ iframe{
 
 </div>
 
+<!-- focus -->
 <div class="focusOverlay" id="overlay" onclick="closeFocus()"></div>
 
 <script>
 
-let cams = document.querySelectorAll(".camera");
-let overlay = document.getElementById("overlay");
-let currentIndex = null;
-
 function focusCam(el){
 
-    const index = Array.from(cams).indexOf(el);
-
-    currentIndex = index;
+    const overlay = document.getElementById("overlay");
 
     const clone = el.cloneNode(true);
     clone.classList.add("focusCam");
@@ -150,10 +154,52 @@ function focusCam(el){
 }
 
 function closeFocus(){
+    const overlay = document.getElementById("overlay");
     overlay.classList.remove("active");
     overlay.innerHTML = "";
-    currentIndex = null;
 }
+
+/* ===== keyboard ===== */
+document.addEventListener("keydown", function(e){
+
+    const key = parseInt(e.key);
+    const cams = document.querySelectorAll(".camera");
+
+    if(key >= 1 && key <= 9){
+        const target = cams[key - 1];
+        if(target) focusCam(target);
+    }
+
+    if(e.key === "Escape"){
+        closeFocus();
+    }
+});
+
+/* ===== fake AI 壅塞偵測 ===== */
+function updateTrafficStatus(){
+
+    const cams = document.querySelectorAll(".camera");
+
+    cams.forEach(cam => {
+
+        const r = Math.random();
+
+        cam.classList.remove("ok","warn","err");
+
+        if(r < 0.6){
+            cam.classList.add("ok");      // 順暢
+        }else if(r < 0.85){
+            cam.classList.add("warn");    // 注意
+        }else{
+            cam.classList.add("err");     // 壅塞
+        }
+    });
+
+}
+
+/* 每 5 秒更新一次 */
+setInterval(updateTrafficStatus, 5000);
+updateTrafficStatus();
 
 </script>
 
